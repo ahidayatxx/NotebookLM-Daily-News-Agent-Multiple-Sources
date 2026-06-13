@@ -167,6 +167,7 @@ def main():
         persona=persona,
         mode=args.mode,
         response_length=args.response_length,
+        sources_md_path=os.path.join(SCRIPT_DIR, "sources.md"),
     )
 
     artifact_flags = build_artifact_flags(args)
@@ -274,6 +275,102 @@ python3 pipeline.py --podcast --keep # With artifacts, keep notebook
 '''
 
 
+def generate_skill_md(project_name, template_name, lang, project_dir):
+    return f'''---
+name: {project_name}
+description: Run the {project_name} NotebookLM synthesis pipeline — ingest sources from sources.md, synthesize via the {template_name} template, optionally generate artifacts (podcast, slides, quiz). Use when user says "run {project_name}", "synthesize {project_name}", "{project_name} briefing", or any request involving this project's NotebookLM synthesis pipeline.
+---
+
+# {project_name}
+
+NotebookLM synthesis pipeline. Standalone project scaffolded from nblm-knowledge-engine.
+
+## Project Location
+
+```
+{project_dir}
+```
+
+## How to Run
+
+```bash
+cd {project_dir}
+python3 pipeline.py
+
+# With artifacts + keep notebook
+python3 pipeline.py --podcast --keep
+
+# Custom persona for this run only
+python3 pipeline.py --persona "Act as a chemistry tutor"
+
+# Convenience wrapper
+./run.sh
+```
+
+## Configuration
+
+- **Sources**: edit `sources.md` (URLs that fail in NotebookLM are auto-removed after each run)
+- **Template**: `templates/{template_name}.md`
+- **Persona** (optional): create `persona.md` for default chat persona
+- **Language**: `{lang}` (override with `--lang`)
+
+## CLI Options
+
+| Flag | Description |
+|------|-------------|
+| `--lang <code>` | Output language (default: `{lang}`) |
+| `--sources <url\\|file>...` | Extra sources on top of sources.md |
+| `--keep` | Keep notebook after pipeline (prints ID) |
+| `--persona <text>` | Custom chat persona (overrides persona.md) |
+| `--mode detailed\\|simple` | Chat response mode (default: detailed) |
+| `--response-length longer\\|medium\\|shorter` | Chat response length (default: longer) |
+| `--podcast` | Generate audio podcast |
+| `--slides` | Generate slide deck |
+| `--quiz` | Generate quiz |
+| `--flashcards` | Generate flashcards |
+| `--infographic` | Generate infographic (PNG) |
+| `--mindmap` | Generate mind map (JSON) |
+| `--report` | Generate report (Markdown) |
+
+## Auto-Cleanup Behavior
+
+If any URL in `sources.md` fails to add to NotebookLM or never reaches `ready` status, it is automatically removed from the file. The next run uses only working sources. This prevents recurring failures from blocked URLs (e.g. sites that reject NotebookLM crawlers).
+
+## Workflow
+
+When this skill is triggered:
+
+### Step 1 — Verify notebooklm connectivity
+
+```bash
+notebooklm list --json | head -3
+```
+
+If auth fails, tell the user to run `notebooklm login --fresh`.
+
+### Step 2 — Run the pipeline
+
+```bash
+cd {project_dir}
+python3 pipeline.py
+```
+
+Source ingestion + synthesis takes 3–5 minutes.
+
+### Step 3 — Present results
+
+- Read the output markdown from `output/`
+- Summarize the key findings for the user
+- List the output file path
+- Note if any URLs were auto-removed from sources.md
+
+### Step 4 — Offer follow-ups
+
+- Offer to generate artifacts (podcast, slides, quiz) on the same notebook via `--keep`
+- Offer to adjust `sources.md`, `templates/{template_name}.md`, or `persona.md` for future runs
+'''
+
+
 def scaffold(project_name, template_name, parent_path, lang):
     parent = parent_path or PROJECTS_PARENT
     project_dir = os.path.join(parent, project_name)
@@ -351,6 +448,12 @@ def scaffold(project_name, template_name, parent_path, lang):
     os.makedirs(os.path.join(project_dir, "output"))
     open(os.path.join(project_dir, "output", ".gitkeep"), "w").close()
 
+    # SKILL.md (Claude Code skill for this project)
+    log("Creating SKILL.md...")
+    skill_md = generate_skill_md(project_name, template_name, lang, project_dir)
+    with open(os.path.join(project_dir, "SKILL.md"), "w") as f:
+        f.write(skill_md)
+
     log("")
     log(f"SUCCESS: Project scaffolded at {project_dir}")
     log("")
@@ -358,7 +461,9 @@ def scaffold(project_name, template_name, parent_path, lang):
     log(f"  1. Edit {project_dir}/sources.md to add your source URLs")
     log(f"  2. (Optional) Create {project_dir}/persona.md to customize chat behavior")
     log(f"  3. Run: cd {project_dir} && python3 pipeline.py")
-    log(f"  4. (Optional) git init && git add -A && git commit -m 'initial'")
+    log(f"  4. Install Claude Code skill (symlink):")
+    log(f"     ln -s {project_dir} ~/.claude/skills/{project_name}")
+    log(f"  5. (Optional) git init && git add -A && git commit -m 'initial'")
 
 
 def main():

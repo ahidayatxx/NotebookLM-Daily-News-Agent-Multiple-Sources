@@ -9,6 +9,8 @@ import subprocess
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from stages.source_validator import clean_sources_file
+
 
 def log(msg):
     print(f"[*] {msg}", flush=True)
@@ -176,8 +178,12 @@ def restore_language(lang):
 
 
 def run(sources, template_path, output_dir, project_name, lang="en", keep=False,
-        persona=None, mode="detailed", response_length="longer"):
-    """Full synthesis pipeline. Returns (output_path, notebook_id)."""
+        persona=None, mode="detailed", response_length="longer", sources_md_path=None):
+    """Full synthesis pipeline. Returns (output_path, notebook_id).
+
+    If sources_md_path is provided, any URL that fails to add or never becomes
+    ready is automatically removed from that file.
+    """
     original_lang = set_language(lang)
 
     notebook_id = None
@@ -198,12 +204,15 @@ def run(sources, template_path, output_dir, project_name, lang="en", keep=False,
         # Add sources in parallel
         log(f"Adding {len(sources)} sources...")
         success_count = 0
+        failed_during_add = []
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(add_source, s["url"], notebook_id) for s in sources]
             for future in as_completed(futures):
-                success, _ = future.result()
+                success, url = future.result()
                 if success:
                     success_count += 1
+                else:
+                    failed_during_add.append(url)
         log(f"Sources added: {success_count}/{len(sources)}")
 
         if success_count == 0:
@@ -216,6 +225,21 @@ def run(sources, template_path, output_dir, project_name, lang="en", keep=False,
 
         if not ready:
             raise RuntimeError("No sources became ready in time")
+
+        # Auto-clean sources.md of URLs that failed add or never became ready
+        if sources_md_path:
+            ready_set = {u.rstrip("/").strip() for u in ready if u}
+            added_urls = [s["url"] for s in sources if s["url"] not in failed_during_add]
+            not_ready = [
+                u for u in added_urls
+                if u.rstrip("/").strip() not in ready_set
+            ]
+            bad_urls = failed_during_add + not_ready
+            if bad_urls:
+                log(f"Cleaning {len(bad_urls)} bad URL(s) from {sources_md_path}")
+                removed = clean_sources_file(sources_md_path, bad_urls)
+                if removed:
+                    log(f"Removed {removed} line(s) from sources.md")
 
         # Read template
         with open(template_path, "r") as f:

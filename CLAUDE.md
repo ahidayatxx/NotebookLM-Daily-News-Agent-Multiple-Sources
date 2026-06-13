@@ -24,11 +24,12 @@ After scaffolding, the project runs on its own — users do not come back to thi
 
 ## Architecture
 
-- `pipeline.py` — scaffolding tool. Generates `pipeline.py` for new projects, copies `stages/`, copies selected template, creates `sources.md` / `README.md` / `CLAUDE.md` / `.gitignore` / `run.sh` / `output/.gitkeep`.
+- `pipeline.py` — scaffolding tool. Generates `pipeline.py` for new projects, copies `stages/`, copies selected template, creates `sources.md` / `README.md` / `CLAUDE.md` / `SKILL.md` / `.gitignore` / `run.sh` / `output/.gitkeep`.
 - `stages/` — reusable pipeline stages. Copied verbatim into every scaffolded project:
   - `source_loader.py` — reads `sources.md`, merges CLI sources, deduplicates
-  - `synthesizer.py` — creates notebook, adds sources (parallel), applies persona, asks prompt, saves markdown
+  - `synthesizer.py` — creates notebook, configures chat (mode/length always, persona if provided) BEFORE source upload, adds sources in parallel, auto-cleans sources.md of failures, asks prompt, saves markdown
   - `artifact_generator.py` — generates optional artifacts (podcast, slides, quiz, etc.)
+  - `source_validator.py` — removes URLs that failed in NotebookLM from sources.md
 - `templates/` — reference prompt templates. One is selected per project via `--template`.
 - `nblm-knowledge-engine/SKILL.md` — Claude Code skill.
 

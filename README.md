@@ -20,6 +20,7 @@ projects/my-topic/
 ├── persona.md               # Optional — you create to customize chat
 ├── output/                  # Generated outputs land here
 ├── run.sh                   # Convenience wrapper
+├── SKILL.md                 # Claude Code skill for this project
 ├── README.md, CLAUDE.md, .gitignore
 ```
 
@@ -29,6 +30,20 @@ cd ../my-topic
 # Edit sources.md with your URLs
 python3 pipeline.py
 ```
+
+## Auto-Generated Skill
+
+Each scaffolded project gets a `SKILL.md` at its root. Install it as a Claude Code skill via symlink:
+
+```bash
+ln -s /Users/ahmadhidayat/claude-code/projects/<name> ~/.claude/skills/<name>
+```
+
+Then in Claude Code you can say "run `<name>`" or "synthesize `<name>`" to trigger the project's pipeline conversationally.
+
+## URL Auto-Cleanup
+
+Every scaffolded pipeline auto-cleans `sources.md` after each run. URLs that fail to add to NotebookLM (or never reach `ready` status) are removed from the file automatically. This prevents recurring failures from sites that block NotebookLM crawlers.
 
 ## Scaffolding Options
 
