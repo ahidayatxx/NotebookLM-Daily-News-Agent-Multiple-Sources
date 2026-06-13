@@ -92,6 +92,14 @@ def parse_args():
     p.add_argument("--lang", default="{lang}", help="Output language")
     p.add_argument("--keep", action="store_true", help="Keep notebook after pipeline")
 
+    # Chat configuration (applied before source upload)
+    p.add_argument("--persona", default=None,
+                   help="Custom chat persona (overrides persona.md). E.g. --persona 'Act as a chemistry tutor'")
+    p.add_argument("--mode", default="detailed", choices=["simple", "detailed"],
+                   help="Chat response mode (default: detailed)")
+    p.add_argument("--response-length", default="longer", choices=["shorter", "medium", "longer"],
+                   help="Chat response length (default: longer)")
+
     p.add_argument("--podcast", action="store_true")
     p.add_argument("--podcast-format", default="deep-dive", choices=["deep-dive", "brief", "critique", "debate"])
     p.add_argument("--slides", action="store_true")
@@ -141,11 +149,13 @@ def main():
         sys.exit(1)
     log(f"Sources loaded: {{len(sources)}}")
 
-    persona = None
-    if os.path.isfile(DEFAULT_PERSONA_FILE):
+    persona = args.persona
+    if not persona and os.path.isfile(DEFAULT_PERSONA_FILE):
         with open(DEFAULT_PERSONA_FILE, "r") as f:
             persona = f.read().strip()
         log(f"Loaded persona from {{DEFAULT_PERSONA_FILE}}")
+    elif persona:
+        log("Using --persona from CLI (overrides persona.md)")
 
     output_path, notebook_id = synthesize(
         sources=sources,
@@ -155,6 +165,8 @@ def main():
         lang=args.lang,
         keep=args.keep,
         persona=persona,
+        mode=args.mode,
+        response_length=args.response_length,
     )
 
     artifact_flags = build_artifact_flags(args)
@@ -218,6 +230,9 @@ python3 pipeline.py --podcast --keep
 | `--lang <code>` | Output language (default: `{lang}`) |
 | `--sources <url\\|file>...` | Extra sources on top of `sources.md` |
 | `--keep` | Keep notebook after pipeline (prints ID) |
+| `--persona <text>` | Custom chat persona (overrides `persona.md`). E.g. `--persona "Act as a chemistry tutor"` |
+| `--mode <mode>` | Chat response mode: `detailed` (default) or `simple` |
+| `--response-length <len>` | Chat response length: `longer` (default), `medium`, or `shorter` |
 | `--podcast` | Generate audio podcast |
 | `--slides` | Generate slide deck |
 | `--quiz` | Generate quiz |

@@ -29,26 +29,38 @@ def create_notebook(title):
     return uuid_match.group(0)
 
 
-def configure_notebook(persona, mode="detailed", response_length="longer"):
-    """Configure chat persona and response settings on the active notebook."""
-    log("Configuring chat persona and response settings...")
-    try:
-        subprocess.run(
-            ["notebooklm", "configure", "--persona", persona],
-            capture_output=True, text=True, check=True,
-        )
-        log("Persona set.")
-    except subprocess.CalledProcessError as e:
-        log(f"Warning: failed to set persona: {e.stderr.strip()}")
+def configure_response_settings(mode="detailed", response_length="longer"):
+    """Set chat response mode and length on the active notebook.
 
+    Always called before source upload so synthesis uses detailed + longer
+    responses by default.
+    """
+    log(f"Configuring response settings: mode={mode}, length={response_length}...")
     try:
         subprocess.run(
             ["notebooklm", "configure", "--mode", mode, "--response-length", response_length],
             capture_output=True, text=True, check=True,
         )
-        log(f"Response settings: mode={mode}, length={response_length}")
+        log("Response settings applied.")
     except subprocess.CalledProcessError as e:
         log(f"Warning: failed to set response settings: {e.stderr.strip()}")
+
+
+def configure_persona(persona):
+    """Set a custom chat persona on the active notebook.
+
+    Called before source upload so NotebookLM grounds synthesis in the
+    requested perspective (e.g. chemistry tutor, senior consultant, etc.).
+    """
+    log("Configuring chat persona...")
+    try:
+        subprocess.run(
+            ["notebooklm", "configure", "--persona", persona],
+            capture_output=True, text=True, check=True,
+        )
+        log("Persona applied.")
+    except subprocess.CalledProcessError as e:
+        log(f"Warning: failed to set persona: {e.stderr.strip()}")
 
 
 def add_source(url, notebook_id, retries=3):
@@ -163,7 +175,8 @@ def restore_language(lang):
             log(f"Warning: failed to restore language: {e}")
 
 
-def run(sources, template_path, output_dir, project_name, lang="en", keep=False, persona=None):
+def run(sources, template_path, output_dir, project_name, lang="en", keep=False,
+        persona=None, mode="detailed", response_length="longer"):
     """Full synthesis pipeline. Returns (output_path, notebook_id)."""
     original_lang = set_language(lang)
 
@@ -177,9 +190,10 @@ def run(sources, template_path, output_dir, project_name, lang="en", keep=False,
         subprocess.run(["notebooklm", "use", notebook_id], check=True)
         log(f"Notebook ID: {notebook_id}")
 
-        # Configure chat persona if provided
+        # Configure BEFORE source upload so all synthesis uses these settings
+        configure_response_settings(mode=mode, response_length=response_length)
         if persona:
-            configure_notebook(persona)
+            configure_persona(persona)
 
         # Add sources in parallel
         log(f"Adding {len(sources)} sources...")
