@@ -199,7 +199,8 @@ def run(sources, template_path, output_dir, project_name, lang="en", keep=False)
             wib_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         header = f"# {project_name} — {wib_time}\n\n"
-        footer = f"\n\n---\n\n*Sources: {', '.join(ready)}*"
+        url_sources = [s for s in ready if s and s.startswith(('http://', 'https://'))]
+        footer = f"\n\n---\n\n*Sources: {', '.join(url_sources)}*"
         final = header + cleaned + footer
 
         # Save
