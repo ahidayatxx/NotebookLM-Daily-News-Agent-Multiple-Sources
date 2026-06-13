@@ -1,130 +1,100 @@
 ---
-description: Run the NotebookLM Knowledge Engine pipeline — synthesize sources, generate briefings, create artifacts. Use when user says "run knowledge engine", "synthesize sources", "generate briefing", "nblm pipeline", "make a podcast from", "PICO synthesis", "study guide from", or any request combining NotebookLM with knowledge management, evidence synthesis, or content generation.
+name: nblm-knowledge-engine
+description: Scaffold standalone NotebookLM synthesis project repos. Creates a new self-contained project directory (with its own pipeline.py, stages, template, sources.md) as a sibling of the engine. Use when user says "scaffold a new NotebookLM project", "create a knowledge engine project", "nblm-knowledge-engine", "new nblm project", "set up a synthesis project", or any request to create a new NotebookLM-based synthesis pipeline for a topic.
 ---
 
-# NotebookLM Knowledge Engine
+# nblm-knowledge-engine
 
-A general-purpose knowledge management pipeline built on notebooklm-py. Creates a disposable NotebookLM notebook, ingests sources, synthesizes knowledge, optionally generates artifacts (podcast, slides, quiz, etc.), saves output, and cleans up.
+A scaffolding tool for standalone NotebookLM synthesis projects. The engine does **not** run synthesis — it generates a new self-contained project directory that the user then runs independently.
 
-## Pipeline Location
+## Engine Location
 
 ```
-/Users/ahmadhidayat/claude-code/projects/NotebookLM-Daily-News-Agent-Multiple-Sources/
+/Users/ahmadhidayat/claude-code/projects/nblm-knowledge-engine/
 ```
 
-## How to Run
+## How to Use
 
-### Via Claude Code (skill mode — you are here)
-
-1. Resolve what the user wants:
-   - **Project**: look for a matching directory under `projects/`, or ask the user to specify `--project <path>`
-   - **Template**: match user intent to a template in `templates/`, or use `--template <path>` if specified
-   - **Extra sources**: if the user provides URLs or file paths in conversation, pass them via `--sources`
-   - **Artifacts**: if user mentions podcast, slides, quiz, etc., add the corresponding flags
-
-2. Build and run the CLI command:
+### Scaffold a new project
 
 ```bash
-cd /Users/ahmadhidayat/claude-code/projects/NotebookLM-Daily-News-Agent-Multiple-Sources
-python pipeline.py --project ./projects/<project-name> [options]
+cd /Users/ahmadhidayat/claude-code/projects/nblm-knowledge-engine
+python3 pipeline.py --init <project-name> [--template <name>] [--lang <code>] [--path <path>]
 ```
 
-### CLI Options
+### Available Templates
 
-| Flag | Description |
-|------|-------------|
-| `--project <path>` | Project directory (required). Must contain `sources.md` |
-| `--template <path>` | Prompt template file. Default: auto-detected or `templates/news-briefing.md` |
-| `--sources <url\|file>...` | Additional sources merged with project's `sources.md` |
-| `--lang <code>` | Output language (e.g., `en`, `id`). Default: `en` |
-| `--keep` | Keep the notebook after pipeline (prints notebook ID) |
-| `--podcast` | Generate audio podcast (MP3) |
-| `--podcast-format <fmt>` | Podcast format: `deep-dive` (default), `brief`, `critique`, `debate` |
-| `--slides` | Generate slide deck |
-| `--slides-format <fmt>` | Slides format: `pdf` (default), `pptx` |
-| `--quiz` | Generate quiz |
-| `--quiz-format <fmt>` | Quiz format: `json` (default), `markdown`, `html` |
-| `--flashcards` | Generate flashcards |
-| `--infographic` | Generate infographic (PNG) |
-| `--mindmap` | Generate mind map (JSON) |
-| `--report` | Generate report (Markdown) |
+- `news-briefing` — daily news synthesis with top 10 + full briefing (default)
+- `pico-synthesis` — clinical evidence analysis using PICO framework
+- `lecture-summary` — study guide with concepts, review questions, takeaways
+- `research-report` — structured report with exec summary, findings, recommendations
 
 ### Examples
 
 ```bash
-# Basic news briefing
-python pipeline.py --project ./projects/indonesia-news
+# Default news briefing
+python3 pipeline.py --init indonesia-news
 
-# PICO synthesis with podcast
-python pipeline.py --project ./projects/glp1-evidence --template ./templates/pico-synthesis.md --podcast
-
-# Ad-hoc sources, keep notebook, generate slides
-python pipeline.py --project ./projects/clinical-guidelines --sources https://pubmed/123 ./paper.pdf --keep --slides
+# Clinical evidence in English
+python3 pipeline.py --init glp1-evidence --template pico-synthesis
 
 # Lecture study guide in Indonesian
-python pipeline.py --project ./projects/lecture-week3 --template ./templates/lecture-summary.md --lang id --quiz
+python3 pipeline.py --init lecture-week3 --template lecture-summary --lang id
+```
+
+## What Gets Created
+
+Scaffolding creates a sibling directory at `/Users/ahmadhidayat/claude-code/projects/<name>/`:
+
+```
+<project-name>/
+├── pipeline.py              # Generated with project-specific defaults
+├── stages/                  # Copied from engine (source_loader, synthesizer, artifact_generator)
+├── templates/
+│   └── <selected>.md        # Copied from engine
+├── sources.md               # Empty — user adds URLs
+├── persona.md               # Optional — user creates to customize chat
+├── output/                  # Outputs land here
+├── run.sh                   # Convenience wrapper
+├── README.md, CLAUDE.md, .gitignore
 ```
 
 ## Workflow
 
-When this skill is triggered, follow these steps:
+When this skill is triggered:
 
-### Step 1 — Verify notebooklm connectivity
+### Step 1 — Resolve parameters with the user
 
-```bash
-which notebooklm || uv tool install notebooklm-py
-notebooklm list --json
-```
+- **Project name**: required, kebab-case (e.g. `indonesia-news`, `glp1-evidence`)
+- **Template**: match user intent — `news-briefing` (default), `pico-synthesis` (clinical), `lecture-summary` (study guide), `research-report` (general research)
+- **Language**: `en` (default), `id`, or other notebooklm-supported codes
+- **Path**: usually default (sibling of engine), override only if user specifies
 
-If auth fails, run `notebooklm login --fresh` and re-check.
-
-### Step 2 — Resolve parameters
-
-- Match user request to a project directory under `projects/`
-- Match user intent to a template in `templates/`
-- Collect any extra sources from the conversation
-- Note any artifact requests (podcast, slides, etc.)
-
-### Step 3 — Run the pipeline
+### Step 2 — Run the scaffolding
 
 ```bash
-cd /Users/ahmadhidayat/claude-code/projects/NotebookLM-Daily-News-Agent-Multiple-Sources
-python pipeline.py --project ./projects/<name> --template ./templates/<template>.md [artifact flags]
+cd /Users/ahmadhidayat/claude-code/projects/nblm-knowledge-engine
+python3 pipeline.py --init <name> --template <template> --lang <lang>
 ```
 
-### Step 4 — Present results
+### Step 3 — Guide next steps
 
-- Read the output markdown file
-- Summarize key findings for the user
-- If artifacts were generated, list their file paths
-- If `--keep` was used, remind user of the notebook ID for later reuse
+After scaffolding succeeds, tell the user:
 
-### Step 5 — Offer follow-ups
+1. Edit `<project>/sources.md` to add source URLs
+2. (Optional) Create `<project>/persona.md` to customize chat behavior
+3. Run: `cd <project> && python3 pipeline.py`
+4. (Optional) `git init && git add -A && git commit -m 'initial'` then push to GitHub
 
-- Suggest artifact generation if none were requested
-- Offer to create a new template if the user has a recurring use case
-- Offer to set up a new project directory for a new topic
+### Step 4 — Offer follow-ups
 
-## Templates
-
-Templates are plain markdown files in `templates/`. The entire file content is the prompt sent to NotebookLM.
-
-To create a new template, add a `.md` file to `templates/` with the synthesis prompt.
-
-## Projects
-
-Each project is a directory under `projects/` with a `sources.md` file listing source URLs (one per line, markdown links or bare URLs).
-
-To create a new project:
-```bash
-mkdir -p projects/<name>/output
-# Edit projects/<name>/sources.md with source URLs
-```
+- Offer to pre-fill `sources.md` if the user mentioned specific URLs
+- Offer to create `persona.md` if the user described a desired voice/perspective
+- Offer to run the project for them right after they confirm sources
 
 ## Important Notes
 
-- Always use full notebook IDs from `--json` output, never truncated IDs
-- The pipeline creates and deletes disposable notebooks by default — use `--keep` to preserve
-- Source processing takes time (30s–3min depending on source count); the pipeline polls until ready
-- Artifact generation is asynchronous; the pipeline waits for completion before downloading
-- Language setting is global to the notebooklm account — the pipeline saves and restores it
+- The engine repo at `/Users/ahmadhidayat/claude-code/projects/nblm-knowledge-engine/` only scaffolds. It does not run synthesis.
+- Each scaffolded project is fully standalone — its `pipeline.py` does not import from the engine.
+- Default scaffolding location: `/Users/ahmadhidayat/claude-code/projects/<name>/` (sibling of engine).
+- To run an existing project, `cd` into it and run its `pipeline.py` directly — do not involve the engine.

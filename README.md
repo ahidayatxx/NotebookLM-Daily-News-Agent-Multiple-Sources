@@ -1,85 +1,45 @@
-# NotebookLM Knowledge Engine
+# nblm-knowledge-engine
 
-A general-purpose knowledge management pipeline built on [notebooklm-py](https://github.com/teng-lin/notebooklm-py). Ingests multi-format sources, synthesizes knowledge via Google NotebookLM, and optionally generates artifacts (podcasts, slides, quizzes, infographics, mind maps, flashcards, reports).
+A scaffolding tool for standalone NotebookLM synthesis projects built on [notebooklm-py](https://github.com/teng-lin/notebooklm-py). The engine does **not** run synthesis itself — it generates a new self-contained project directory that you then run independently.
 
 ## How It Works
 
-1. **Load sources** from a project's `sources.md` + optional CLI arguments
-2. **Create a disposable NotebookLM notebook**, bulk-add all sources
-3. **Synthesize** using a prompt template (news briefing, PICO analysis, study guide, etc.)
-4. **Optionally generate artifacts** — podcast, slides, quiz, infographic, etc.
-5. **Save markdown + artifacts** to the project's `output/` directory
-6. **Clean up** (or keep the notebook with `--keep`)
-
-## Quick Start
-
 ```bash
-# Install notebooklm-py
-pip install notebooklm-py
-
-# Authenticate
-notebooklm login
-
-# Run with the example project
-python pipeline.py --project ./projects/_example --template ./templates/news-briefing
-
-# Generate a podcast too
-python pipeline.py --project ./projects/_example --template ./templates/news-briefing --podcast
-
-# Keep the notebook for later queries
-python pipeline.py --project ./projects/_example --keep
+python3 pipeline.py --init my-topic
 ```
 
-## CLI Reference
+This creates a **sibling directory** at `../my-topic/` with everything needed to run:
+
+```
+projects/my-topic/
+├── pipeline.py              # Generated with project-specific defaults
+├── stages/                  # Copied from engine
+├── templates/
+│   └── news-briefing.md     # Copied from engine (selectable)
+├── sources.md               # Empty — you add URLs
+├── persona.md               # Optional — you create to customize chat
+├── output/                  # Generated outputs land here
+├── run.sh                   # Convenience wrapper
+├── README.md, CLAUDE.md, .gitignore
+```
+
+Then:
+```bash
+cd ../my-topic
+# Edit sources.md with your URLs
+python3 pipeline.py
+```
+
+## Scaffolding Options
 
 | Flag | Description |
 |------|-------------|
-| `--project <path>` | Project directory (required). Must contain `sources.md` |
-| `--template <path>` | Prompt template file |
-| `--sources <url\|file>...` | Additional sources merged with `sources.md` |
-| `--lang <code>` | Output language (default: `en`) |
-| `--keep` | Keep notebook after pipeline (prints ID for reuse) |
-| `--podcast` | Generate audio podcast (MP3) |
-| `--podcast-format` | `deep-dive` (default), `brief`, `critique`, `debate` |
-| `--slides` | Generate slide deck (PDF or PPTX) |
-| `--slides-format` | `pdf` (default) or `pptx` |
-| `--quiz` | Generate quiz |
-| `--quiz-format` | `json` (default), `markdown`, `html` |
-| `--flashcards` | Generate flashcards |
-| `--infographic` | Generate infographic (PNG) |
-| `--mindmap` | Generate mind map (JSON) |
-| `--report` | Generate report (Markdown) |
+| `--init <name>` | Name of the new project (required) |
+| `--template <name>` | Template to copy (default: `news-briefing`) |
+| `--lang <code>` | Default output language baked into the project (default: `en`) |
+| `--path <path>` | Custom parent directory (default: sibling of engine) |
 
-## Creating a New Project
-
-```bash
-mkdir -p projects/my-topic/output
-cat > projects/my-topic/sources.md << 'EOF'
-# My Topic Sources
-https://example.com/article1
-https://example.com/article2
-./local-paper.pdf
-EOF
-```
-
-Then run:
-```bash
-python pipeline.py --project ./projects/my-topic --template ./templates/research-report
-```
-
-## Creating a New Template
-
-Add a `.md` file to `templates/`. The entire file content is sent as the prompt to NotebookLM.
-
-Example `templates/my-template.md`:
-```markdown
-Analyze all sources and:
-1. Identify the top 3 key findings
-2. Explain their significance
-3. Recommend next steps
-```
-
-## Built-in Templates
+## Available Templates
 
 | Template | Use Case |
 |----------|----------|
@@ -88,36 +48,57 @@ Analyze all sources and:
 | `lecture-summary` | Study guide with concepts, review questions, takeaways |
 | `research-report` | Structured report with exec summary, findings, recommendations |
 
-## Claude Code Skill
-
-This repo includes a Claude Code skill (`nblm-knowledge-engine/SKILL.md`) that lets you run the pipeline conversationally. To install:
+## Examples
 
 ```bash
-cp -r nblm-knowledge-engine ~/.claude/skills/
-```
+# Default news briefing project in English
+python3 pipeline.py --init indonesia-news
 
-Then in Claude Code:
-- "run the knowledge engine for the example project"
-- "synthesize these sources using PICO template"
-- "generate a podcast from the clinical guidelines project"
+# Clinical evidence project in English
+python3 pipeline.py --init glp1-evidence --template pico-synthesis
+
+# Lecture study guide in Indonesian
+python3 pipeline.py --init lecture-week3 --template lecture-summary --lang id
+
+# Custom parent directory
+python3 pipeline.py --init my-topic --path ~/repos
+```
 
 ## Architecture
 
 ```
-pipeline.py              # CLI orchestrator
-stages/
-├── source_loader.py     # Resolve sources from config + CLI
-├── synthesizer.py       # Notebook CRUD, source ingestion, synthesis
-└── artifact_generator.py # Optional artifact generation
-templates/               # Prompt files (plain markdown)
-projects/                # One directory per topic
+nblm-knowledge-engine/
+├── pipeline.py              # Scaffolding tool (entry point)
+├── stages/                  # Copied verbatim into each new project
+│   ├── source_loader.py
+│   ├── synthesizer.py
+│   └── artifact_generator.py
+├── templates/               # Reference templates (one copied per project)
+│   ├── news-briefing.md
+│   ├── pico-synthesis.md
+│   ├── lecture-summary.md
+│   └── research-report.md
+└── nblm-knowledge-engine/
+    └── SKILL.md             # Claude Code skill
 ```
+
+## Why Scaffold Instead of Run?
+
+Each project becomes independently runnable, version-controllable, and customizable without touching the engine. The engine stays a clean tool; projects own their configs, templates, and outputs. Pattern proven by [`health-mgmt-consultant-id`](https://github.com/ahidayatxx/health-mgmt-consultant-id).
+
+## Claude Code Skill
+
+Install the skill for conversational use:
+```bash
+cp -r nblm-knowledge-engine ~/.claude/skills/
+```
+
+Then in Claude Code: "scaffold a new NotebookLM project for X".
 
 ## Requirements
 
 - Python 3.10+
-- [notebooklm-py](https://pypi.org/project/notebooklm-py/)
-- Authenticated Google account (`notebooklm login`)
+- [notebooklm-py](https://pypi.org/project/notebooklm-py/) (needed by scaffolded projects at run time)
 
 ## License
 

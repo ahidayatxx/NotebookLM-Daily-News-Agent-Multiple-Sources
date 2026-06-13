@@ -4,41 +4,57 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Overview
 
-NotebookLM Knowledge Engine — a general-purpose pipeline that ingests multi-format sources, synthesizes knowledge via Google NotebookLM, and optionally generates artifacts (podcasts, slides, quizzes, etc.). Built on notebooklm-py.
+**nblm-knowledge-engine** is a scaffolding tool. It does NOT run NotebookLM synthesis itself. It generates standalone project repos (as siblings of itself) that each contain their own `pipeline.py`, `stages/`, template, and config — runnable independently.
 
 ## Commands
 
 ```bash
-# Run the pipeline
-python pipeline.py --project ./projects/<name> --template ./templates/<template>
+# Scaffold a new project (default: news-briefing template, English)
+python3 pipeline.py --init my-topic
 
-# With artifacts
-python pipeline.py --project ./projects/<name> --podcast --slides
+# Pick a template + language
+python3 pipeline.py --init glp1-evidence --template pico-synthesis
+python3 pipeline.py --init lecture-id --template lecture-summary --lang id
 
-# Verify notebooklm connectivity
-notebooklm list --json
-
-# Authenticate
-notebooklm login
+# Custom parent dir (default: sibling of engine repo)
+python3 pipeline.py --init my-topic --path ~/repos
 ```
+
+After scaffolding, the project runs on its own — users do not come back to this engine repo to run it.
 
 ## Architecture
 
-- `pipeline.py` — CLI orchestrator, parses args, calls stages in sequence
-- `stages/source_loader.py` — reads `sources.md`, merges CLI sources, deduplicates
-- `stages/synthesizer.py` — creates notebook, adds sources (parallel), polls readiness, asks prompt, saves markdown
-- `stages/artifact_generator.py` — generates optional artifacts based on flags
-- `templates/` — plain markdown prompt files
-- `projects/` — one directory per topic, each with `sources.md` and `output/`
+- `pipeline.py` — scaffolding tool. Generates `pipeline.py` for new projects, copies `stages/`, copies selected template, creates `sources.md` / `README.md` / `CLAUDE.md` / `.gitignore` / `run.sh` / `output/.gitkeep`.
+- `stages/` — reusable pipeline stages. Copied verbatim into every scaffolded project:
+  - `source_loader.py` — reads `sources.md`, merges CLI sources, deduplicates
+  - `synthesizer.py` — creates notebook, adds sources (parallel), applies persona, asks prompt, saves markdown
+  - `artifact_generator.py` — generates optional artifacts (podcast, slides, quiz, etc.)
+- `templates/` — reference prompt templates. One is selected per project via `--template`.
+- `nblm-knowledge-engine/SKILL.md` — Claude Code skill.
 
-## Skill
+## What a Scaffolded Project Looks Like
 
-`nblm-knowledge-engine/SKILL.md` is the Claude Code skill. Install to `~/.claude/skills/` for conversational use.
+```
+projects/<name>/
+├── pipeline.py       # Generated with project-specific defaults baked in
+├── stages/           # Copied from engine
+├── templates/
+│   └── <selected>.md # Copied from engine
+├── sources.md        # Empty — user adds URLs
+├── persona.md        # Optional — user creates to customize chat
+├── output/
+├── run.sh            # Convenience wrapper
+├── README.md
+├── CLAUDE.md
+└── .gitignore
+```
+
+The scaffolded `pipeline.py` supports: `--template`, `--sources`, `--lang`, `--keep`, and artifact flags (`--podcast`, `--slides`, `--quiz`, `--flashcards`, `--infographic`, `--mindmap`, `--report`).
 
 ## Key Patterns
 
-- NotebookLM notebooks are **disposable by default** (create → use → delete). Use `--keep` to preserve.
-- Always use full notebook IDs from `--json` output, never truncated.
-- Language setting is global — the pipeline saves/restores it automatically.
-- Source adding uses parallel ThreadPoolExecutor with retry logic.
-- Artifacts are generated after synthesis, sequentially.
+- The engine never runs synthesis — it only creates new project repos.
+- Each scaffolded project is self-contained and standalone.
+- Default scaffolding location is a sibling of the engine: `/Users/ahmadhidayat/claude-code/projects/<name>/`.
+- The scaffolded project's `pipeline.py` auto-loads `persona.md` if present.
+- Notebooks are disposable by default; use `--keep` to preserve.
