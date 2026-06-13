@@ -79,6 +79,14 @@ def main():
     project_name = os.path.basename(project_dir)
     output_dir = os.path.join(project_dir, "output")
 
+    # Load persona if present
+    persona_path = os.path.join(project_dir, "persona.md")
+    persona = None
+    if os.path.isfile(persona_path):
+        with open(persona_path, "r") as f:
+            persona = f.read().strip()
+        log(f"Loaded persona from {persona_path}")
+
     # Resolve template
     template = args.template or DEFAULT_TEMPLATE
     if not os.path.isabs(template):
@@ -103,6 +111,7 @@ def main():
         project_name=project_name,
         lang=args.lang,
         keep=args.keep,
+        persona=persona,
     )
 
     # Generate artifacts

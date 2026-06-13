@@ -29,6 +29,28 @@ def create_notebook(title):
     return uuid_match.group(0)
 
 
+def configure_notebook(persona, mode="detailed", response_length="longer"):
+    """Configure chat persona and response settings on the active notebook."""
+    log("Configuring chat persona and response settings...")
+    try:
+        subprocess.run(
+            ["notebooklm", "configure", "--persona", persona],
+            capture_output=True, text=True, check=True,
+        )
+        log("Persona set.")
+    except subprocess.CalledProcessError as e:
+        log(f"Warning: failed to set persona: {e.stderr.strip()}")
+
+    try:
+        subprocess.run(
+            ["notebooklm", "configure", "--mode", mode, "--response-length", response_length],
+            capture_output=True, text=True, check=True,
+        )
+        log(f"Response settings: mode={mode}, length={response_length}")
+    except subprocess.CalledProcessError as e:
+        log(f"Warning: failed to set response settings: {e.stderr.strip()}")
+
+
 def add_source(url, notebook_id, retries=3):
     """Add a single source to a notebook. Returns (success, url)."""
     cmd = ["notebooklm", "source", "add", url, "--json", "-n", notebook_id]
@@ -141,7 +163,7 @@ def restore_language(lang):
             log(f"Warning: failed to restore language: {e}")
 
 
-def run(sources, template_path, output_dir, project_name, lang="en", keep=False):
+def run(sources, template_path, output_dir, project_name, lang="en", keep=False, persona=None):
     """Full synthesis pipeline. Returns (output_path, notebook_id)."""
     original_lang = set_language(lang)
 
@@ -154,6 +176,10 @@ def run(sources, template_path, output_dir, project_name, lang="en", keep=False)
         notebook_id = create_notebook(title)
         subprocess.run(["notebooklm", "use", notebook_id], check=True)
         log(f"Notebook ID: {notebook_id}")
+
+        # Configure chat persona if provided
+        if persona:
+            configure_notebook(persona)
 
         # Add sources in parallel
         log(f"Adding {len(sources)} sources...")

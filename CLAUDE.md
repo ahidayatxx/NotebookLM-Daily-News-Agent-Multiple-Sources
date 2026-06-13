@@ -33,7 +33,7 @@ notebooklm login
 
 ## Skill
 
-`nblm-knowledge-engine.md` is the Claude Code skill. Install to `~/.claude/skills/` for conversational use.
+`nblm-knowledge-engine/SKILL.md` is the Claude Code skill. Install to `~/.claude/skills/` for conversational use.
 
 ## Key Patterns
 

@@ -90,14 +90,14 @@ Analyze all sources and:
 
 ## Claude Code Skill
 
-This repo includes a Claude Code skill (`nblm-knowledge-engine.md`) that lets you run the pipeline conversationally. To install:
+This repo includes a Claude Code skill (`nblm-knowledge-engine/SKILL.md`) that lets you run the pipeline conversationally. To install:
 
 ```bash
-cp nblm-knowledge-engine.md ~/.claude/skills/
+cp -r nblm-knowledge-engine ~/.claude/skills/
 ```
 
 Then in Claude Code:
-- "run the knowledge engine for indonesia news"
+- "run the knowledge engine for the example project"
 - "synthesize these sources using PICO template"
 - "generate a podcast from the clinical guidelines project"
 
