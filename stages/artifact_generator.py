@@ -150,6 +150,24 @@ def generate(notebook_id, output_dir, flags):
                 ])
                 downloaded.append(path)
 
+            elif artifact_type == "video":
+                fmt = options.get("format", "explainer")
+                _run_cmd([
+                    "notebooklm", "generate", "video",
+                    f"--format={fmt}", "--wait", "-n", notebook_id,
+                ])
+                path = os.path.join(output_dir, "video.mp4")
+                _run_cmd(["notebooklm", "download", "video", path, "-n", notebook_id])
+                downloaded.append(path)
+
+            elif artifact_type == "data-table":
+                _run_cmd([
+                    "notebooklm", "generate", "data-table", "--wait", "-n", notebook_id,
+                ])
+                path = os.path.join(output_dir, "data-table.csv")
+                _run_cmd(["notebooklm", "download", "data-table", path, "-n", notebook_id])
+                downloaded.append(path)
+
             log(f"Downloaded: {path}")
 
         except subprocess.CalledProcessError as e:

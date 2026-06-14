@@ -50,7 +50,7 @@ projects/<name>/
 └── .gitignore
 ```
 
-The scaffolded `pipeline.py` supports: `--template`, `--sources`, `--lang`, `--keep`, and artifact flags (`--podcast`, `--slides`, `--quiz`, `--flashcards`, `--infographic`, `--mindmap`, `--report`).
+The scaffolded `pipeline.py` supports: `--template`, `--sources`, `--lang`, `--keep`, and artifact flags (`--podcast`, `--slides`, `--quiz`, `--flashcards`, `--infographic`, `--mindmap`, `--report`, `--video`, `--data-table`).
 
 ## Key Patterns
 
@@ -59,3 +59,12 @@ The scaffolded `pipeline.py` supports: `--template`, `--sources`, `--lang`, `--k
 - Default scaffolding location is a sibling of the engine: `/Users/ahmadhidayat/claude-code/projects/<name>/`.
 - The scaffolded project's `pipeline.py` auto-loads `persona.md` if present.
 - Notebooks are disposable by default; use `--keep` to preserve.
+
+## CLI Reference
+
+Full `notebooklm` CLI documentation is at `docs/cli-reference/` (symlink to `../notebooklm-cli-commands-and-arguments/`):
+
+- `notebooklm-cli-help.md` — complete command/option reference (CLI v0.7.1)
+- `notebooklm-cli-beyond-web-ui.md` — 14 advanced features not available in the web UI
+
+**Read these before adding or modifying any `notebooklm` CLI calls in `stages/`.**
