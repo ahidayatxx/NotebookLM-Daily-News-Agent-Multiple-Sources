@@ -86,6 +86,20 @@ After scaffolding succeeds, tell the user:
 3. Run: `cd <project> && python3 pipeline.py`
 4. (Optional) `git init && git add -A && git commit -m 'initial'` then push to GitHub
 
+### Optional artifact flags (pass to `pipeline.py` at run time)
+
+| Flag | Output | Notes |
+|---|---|---|
+| `--podcast` | `podcast.mp3` | Formats: deep-dive (default), brief, critique, debate |
+| `--slides` | `slides.pdf` / `slides.pptx` | Pass `--slides --format pptx` for editable |
+| `--quiz` | `quiz.json/md/html` | Pass `--format json/markdown/html` |
+| `--flashcards` | `flashcards.json` | |
+| `--infographic` | `infographic.png` | |
+| `--mindmap` | `mindmap.json` | |
+| `--report` | `report.md` | Briefing format |
+| `--video` | `video.mp4` | Formats: explainer (default), brief |
+| `--data-table` | `data-table.csv` | CSV structured table |
+
 ### Step 4 — Offer follow-ups
 
 - Offer to pre-fill `sources.md` if the user mentioned specific URLs
